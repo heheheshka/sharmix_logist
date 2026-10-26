@@ -1,6 +1,6 @@
 'use strict';
 // To activate the second result-screen button, replace the address below.
-const SHARMIX_URL = 'https://wiki.skbkontur.ru/pages/viewpage.action?pageId=1043631326'; // e.g. 'https://your-company.example/sharmixes'
+const SHARMIX_URL = ''; // e.g. 'https://your-company.example/sharmixes'
 
 const MEDIA = window.matchMedia('(max-width: 760px)');
 const HEROES = [
@@ -429,7 +429,7 @@ function loseLife(reason){
  if(state.heroHitTime>0)return;
  if(state.shieldTimer>0){
    if(reason==='miss')return; // During the 10-second rain missed charmixes cost no lives.
-   endShield(true);state.heroHitTime=.32;state.spawnCooldown=.24;
+   endShield();state.heroHitTime=.32;state.spawnCooldown=.24;
    showToast('ERROR разбил щит: усиление закончилось',1300,'negative');return;
  }
  playSound('error');state.lives=Math.max(0,state.lives-1);
@@ -450,18 +450,17 @@ function choosePhrase(){
  else {const max=Math.max(...c);const leading=c.map((v,i)=>v===max?i:-1).filter(v=>v!==-1);group=pick(leading)}
  return pick(PHRASES[group]);
 }
-function clearFieldAfterShield(){
- state.objects=[];
- state.fieldEpoch++;
- state.spawnCooldown=.25;
- state.shieldJustEnded=true;
- // The restart is quiet but immediate: no leftover cascade becomes a lethal trap.
-}
-function endShield(clearField=true){
- // Called both when the timer hits 0 and when ERROR breaks the shield.
+function endShield(){
+ // Preserve every object and its current trajectory: the shield ending must not visually reset the field.
+ // Charms that are already airborne get a one-time grace on missed pickup, since they
+ // may have been generated without the usual reachability restrictions during the shield.
+ for(const ob of state.objects){
+   if(!ob.collected && ob.type==='charm') ob.shieldGrace=true;
+ }
  state.shieldTimer=0;
  state.shieldBurstTimer=0;
- if(clearField)clearFieldAfterShield();
+ state.shieldJustEnded=true;
+ // Keep the existing spawn schedule, speed and positions as they are.
  renderEffects();
 }
 function updateResults(){
@@ -520,7 +519,7 @@ function advanceObjects(dt){
      if(state.mode==='tutorial'){
        if(ob.type==='error')advanceTutorial();
        else {state.tutorialSpawned=false;state.tutorialNextAt=state.elapsed+.5;}
-     }else if(ob.type==='charm'){loseLife('miss');if(state.mode==='delivery'||state.fieldEpoch!==startingEpoch)return;}
+     }else if(ob.type==='charm'&&!ob.shieldGrace){loseLife('miss');if(state.mode==='delivery'||state.fieldEpoch!==startingEpoch)return;}
    }
  }
  state.objects=state.objects.filter(ob=>!ob.collected&&ob.y<state.H+120);
@@ -532,7 +531,7 @@ function update(dt){
      state.letterCooldown=Math.max(0,state.letterCooldown-dt);
      const shieldBefore=state.shieldTimer;
      state.shieldTimer=Math.max(0,state.shieldTimer-dt);
-     if(shieldBefore>0&&state.shieldTimer===0)endShield(true);
+     if(shieldBefore>0&&state.shieldTimer===0)endShield();
      state.shieldBurstTimer=Math.max(0,state.shieldBurstTimer-dt);
      state.doubleTimer=Math.max(0,state.doubleTimer-dt);
      state.hudClock-=dt;if(state.hudClock<=0){renderEffects();state.hudClock=.21;}

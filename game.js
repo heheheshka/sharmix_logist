@@ -1,6 +1,6 @@
 'use strict';
 // To activate the second result-screen button, replace the address below.
-const SHARMIX_URL = ''; // e.g. 'https://your-company.example/sharmixes'
+const SHARMIX_URL = 'https://wiki.skbkontur.ru/pages/viewpage.action?pageId=1043631326'; // e.g. 'https://your-company.example/sharmixes'
 
 const MEDIA = window.matchMedia('(max-width: 760px)');
 const HEROES = [
